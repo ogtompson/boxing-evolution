@@ -139,6 +139,6 @@ O aprendizado está integrado à mecânica:
 
 ---
 
-## Autores
+## Autor
 
-Projeto acadêmico — Disciplina de Programação Imperativa e Funcional (PIF)
+Paulo Henrique Tompson
