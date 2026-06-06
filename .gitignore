@@ -1,0 +1,16 @@
+# Executáveis
+*.exe
+
+# Saves do jogo
+*.dat
+
+# Arquivos objeto
+*.o
+*.obj
+
+# Pastas de build
+build/
+bin/
+
+# Configurações locais do VS Code
+.vscode/
