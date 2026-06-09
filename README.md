@@ -1,12 +1,40 @@
 # BOXING EVOLUTION — Projeto PIF
 
-Jogo educativo desenvolvido em C com Raylib para a disciplina de Programação Imperativa e Funcional.
+O Boxing Evolution é um jogo educativo que combina elementos de progressão, treinamento e combate para ensinar conceitos reais sobre o boxe de forma integrada à jogabilidade.
+
+O jogador assume o papel de um atleta iniciante que busca evoluir sua carreira por meio de treinamentos, desenvolvimento de atributos e enfrentamento de adversários cada vez mais desafiadores. Durante essa progressão, são apresentados conhecimentos relacionados a técnicas de golpes, estratégias de luta e curiosidades do esporte.
+
+Além do caráter educativo, o projeto tem como objetivo demonstrar na prática os principais conceitos estudados na disciplina, utilizando estruturas de dados, modularização, arquivos, ponteiros, funções e afins.
 
 ---
 
 ## Objetivo
 
 Ensinar conceitos básicos do boxe de forma integrada à jogabilidade, demonstrando simultaneamente os principais conceitos de programação em C.
+
+---
+
+## Ferramentas Utilizadas
+
+- Git
+- GitHub
+- Visual Studio Code
+
+---
+
+## Desenvolvimento do Projeto
+
+O desenvolvimento ocorreu de forma incremental, passando pelas seguintes etapas:
+
+1. Definição do tema e escopo do jogo;
+2. Estruturação dos módulos principais;
+3. Implementação da progressão do jogador;
+4. Desenvolvimento do sistema de combate;
+5. Criação dos minigames de treinamento;
+6. Integração do sistema educativo;
+7. Desenvolvimento da interface gráfica;
+8. Refinamento visual utilizando pixel art;
+9. Testes, ajustes de balanceamento e correção de bugs.
 
 ---
 
