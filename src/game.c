@@ -115,47 +115,60 @@ void JogoUpdate(Jogo *j) {
 
     /* ==================== ACADEMIA ==================== */
     case STATE_ACADEMIA: {
-        /* Opcoes fixas: 7 itens */
-        if (IsKeyPressed(KEY_DOWN)) NavDown(&j->academia_opcao, 7);
-        if (IsKeyPressed(KEY_UP))   NavUp  (&j->academia_opcao, 7);
+        /* academia_sub=0: tela das portas
+           academia_sub=1: submenu treino
+           academia_sub=2: card do adversario (confirmar luta) */
 
-        if (IsKeyPressed(KEY_ENTER)) {
-            switch (j->academia_opcao) {
-                case 0: /* Treinar Velocidade */
-                    TrainoInit(&g_treino, TREINO_VELOCIDADE);
-                    g_treino_recompensa_aplicada = 0;
-                    JogoMudarEstado(j, STATE_TREINO_VELOCIDADE);
-                    break;
-                case 1: /* Treinar Potencia */
-                    TrainoInit(&g_treino, TREINO_POTENCIA);
-                    g_treino_recompensa_aplicada = 0;
-                    JogoMudarEstado(j, STATE_TREINO_POTENCIA);
-                    break;
-                case 2: /* Treinar Resistencia */
-                    TrainoInit(&g_treino, TREINO_RESISTENCIA);
-                    g_treino_recompensa_aplicada = 0;
-                    JogoMudarEstado(j, STATE_TREINO_RESISTENCIA);
-                    break;
-                case 3: /* Lutar */
-                    if (j->jogador.fase_atual < MAX_ADVERSARIOS) {
-                        FightInit(j, j->jogador.fase_atual);
-                        AbrirConhecimento(j,
-                            j->adversarios[j->jogador.fase_atual].nome,
-                            j->adversarios[j->jogador.fase_atual].dica_pre_luta,
-                            CONHECIMENTO_VOLTA_LUTA);
-                    }
-                    break;
-                case 4: /* Estatisticas */
+        if (j->academia_sub == 0) {
+            /* Navegacao lateral pelas 3 portas: 0=Treinar 1=Lutar 2=Stats */
+            if (IsKeyPressed(KEY_LEFT))  NavUp  (&j->academia_opcao, 3);
+            if (IsKeyPressed(KEY_RIGHT)) NavDown(&j->academia_opcao, 3);
+            if (IsKeyPressed(KEY_ESCAPE)) {
+                j->menu_opcao = 0;
+                JogoMudarEstado(j, STATE_MENU);
+            }
+            if (IsKeyPressed(KEY_S)) {
+                SaveJogo(&j->jogador);
+                j->timer_save_feedback = 2.0f;
+            }
+            if (IsKeyPressed(KEY_ENTER)) {
+                if (j->academia_opcao == 0) {
+                    /* Porta TREINAR: abre submenu */
+                    j->academia_sub = 1;
+                    j->treino_opcao = 0;
+                } else if (j->academia_opcao == 1) {
+                    /* Porta LUTAR: mostra card do adversario */
+                    j->academia_sub = 2;
+                } else if (j->academia_opcao == 2) {
+                    /* Porta STATS */
                     JogoMudarEstado(j, STATE_ESTATISTICAS);
-                    break;
-                case 5: /* Salvar */
-                    SaveJogo(&j->jogador);
-                    j->timer_save_feedback = 2.0f;
-                    break;
-                case 6: /* Menu */
-                    j->menu_opcao = 0;
-                    JogoMudarEstado(j, STATE_MENU);
-                    break;
+                }
+            }
+        } else if (j->academia_sub == 1) {
+            /* Submenu de treino */
+            if (IsKeyPressed(KEY_LEFT))  NavUp  (&j->treino_opcao, 3);
+            if (IsKeyPressed(KEY_RIGHT)) NavDown(&j->treino_opcao, 3);
+            if (IsKeyPressed(KEY_ESCAPE)) j->academia_sub = 0;
+            if (IsKeyPressed(KEY_ENTER)) {
+                int tipos[3] = {TREINO_VELOCIDADE, TREINO_POTENCIA, TREINO_RESISTENCIA};
+                int estados[3] = {STATE_TREINO_VELOCIDADE, STATE_TREINO_POTENCIA, STATE_TREINO_RESISTENCIA};
+                TrainoInit(&g_treino, tipos[j->treino_opcao]);
+                g_treino_recompensa_aplicada = 0;
+                j->academia_sub = 0;
+                JogoMudarEstado(j, estados[j->treino_opcao]);
+            }
+        } else if (j->academia_sub == 2) {
+            /* Card de confirmacao de luta */
+            if (IsKeyPressed(KEY_ESCAPE)) j->academia_sub = 0;
+            if (IsKeyPressed(KEY_ENTER)) {
+                if (j->jogador.fase_atual < MAX_ADVERSARIOS) {
+                    FightInit(j, j->jogador.fase_atual);
+                    AbrirConhecimento(j,
+                        j->adversarios[j->jogador.fase_atual].nome,
+                        j->adversarios[j->jogador.fase_atual].dica_pre_luta,
+                        CONHECIMENTO_VOLTA_LUTA);
+                    j->academia_sub = 0;
+                }
             }
         }
         break;
@@ -322,149 +335,269 @@ void JogoDraw(Jogo *j) {
 
     /* ==================== ACADEMIA ==================== */
     case STATE_ACADEMIA: {
-        /* Fundo com degrad-- simulado */
-        ClearBackground((Color){10, 14, 28, 255});
-        DrawRectangle(0, 0, SCREEN_W, 300, (Color){12, 18, 36, 255});
-
-        /* Desenho decorativo: boxeador no fundo (silhueta) */
-        DrawCircle(880, 320, 55, (Color){20, 30, 55, 255});   /* cabeca */
-        DrawRectangle(840, 370, 80, 100, (Color){20, 30, 55, 255}); /* corpo */
-        DrawCircle(820, 390, 18, (Color){18, 28, 50, 255});   /* luva */
-        DrawCircle(900, 385, 18, (Color){18, 28, 50, 255});   /* luva */
-        DrawRectangle(848, 468, 20, 50, (Color){20, 30, 55, 255}); /* perna */
-        DrawRectangle(872, 468, 20, 50, (Color){20, 30, 55, 255}); /* perna */
-
-        /* Titulo */
-        DrawRectangle(0, 0, SCREEN_W, 72, (Color){0,0,0,160});
-        DrawText("ACADEMIA DE BOXE", 20, 14, 30, GOLD);
-
-        char buf[128];
-        /* Barra de progressao da fase */
-        DrawText("PROGRESSO:", SCREEN_W - 320, 10, 12, LIGHTGRAY);
-        for (int i = 0; i < MAX_ADVERSARIOS; i++) {
-            Color cp = (i < j->jogador.fase_atual) ? GOLD :
-                       (i == j->jogador.fase_atual) ? (Color){200,200,0,255} :
-                       (Color){50,50,80,255};
-            DrawRectangle(SCREEN_W - 310 + i * 56, 26, 48, 16, cp);
-            DrawRectangleLines(SCREEN_W - 310 + i * 56, 26, 48, 16, WHITE);
-            const char *fnames[] = {"F1","F2","F3","F4","F5"};
-            DrawText(fnames[i], SCREEN_W - 298 + i * 56, 30, 11,
-                     i < j->jogador.fase_atual ? BLACK : WHITE);
+        /* ---- FUNDO: Academia de boxe pixel art ---- */
+        /* Chao de madeira */
+        for (int i=0;i<16;i++) {
+            Color mc = (i%2==0)?(Color){100,65,30,255}:(Color){90,58,26,255};
+            DrawRectangle(i*64,380,64,220,mc);
+            DrawRectangle(i*64,380,1,220,(Color){70,45,18,255});
         }
+        /* Parede de tijolo */
+        for (int row=0;row<12;row++) {
+            int off=(row%2)*48;
+            for (int col=-1;col<18;col++) {
+                int bx2=col*96+off, by2=row*32;
+                Color tc=(row+col)%2==0?(Color){160,70,50,255}:(Color){140,60,42,255};
+                DrawRectangle(bx2,by2,94,30,tc);
+                DrawRectangle(bx2,by2,94,1,(Color){80,40,25,255});
+                DrawRectangle(bx2,by2,1,30,(Color){80,40,25,255});
+            }
+        }
+        /* Teto */
+        DrawRectangle(0,370,1024,16,(Color){60,40,20,255});
 
-        sprintf(buf, "Nivel %d", j->jogador.nivel);
-        DrawText(buf, SCREEN_W - 80, 10, 13, LIGHTGRAY);
+        /* Janela esquerda */
+        DrawRectangle(30,60,140,160,(Color){100,150,200,200});
+        DrawRectangle(30,60,140,2,BLACK); DrawRectangle(30,60,2,160,BLACK);
+        DrawRectangle(168,60,2,160,BLACK); DrawRectangle(30,218,140,2,BLACK);
+        DrawRectangle(100,60,2,160,(Color){80,40,20,255});
+        DrawRectangle(30,140,140,2,(Color){80,40,20,255});
+        /* Grade janela */
+        DrawRectangle(26,56,148,168,(Color){80,40,20,255});
+        DrawRectangle(30,60,140,160,(Color){100,160,220,180});
 
-        /* Status do jogador */
-        PlayerDrawStatus(&j->jogador, 16, 80);
+        /* Janela direita */
+        DrawRectangle(854,60,140,160,(Color){100,150,200,200});
+        DrawRectangle(854,56,148,4,(Color){80,40,20,255});
+        DrawRectangle(850,56,4,168,(Color){80,40,20,255});
+        DrawRectangle(998,56,4,168,(Color){80,40,20,255});
+        DrawRectangle(854,220,148,4,(Color){80,40,20,255});
+        DrawRectangle(928,60,2,160,(Color){80,40,20,255});
+        DrawRectangle(854,140,140,2,(Color){80,40,20,255});
 
+        /* Saco de pancada esquerda */
+        DrawRectangle(160,130,50,120,(Color){160,80,30,255});
+        DrawRectangle(160,130,50,4,(Color){100,50,20,255});
+        DrawRectangle(160,248,50,6,(Color){100,50,20,255});
+        DrawRectangle(158,128,2,122,(Color){100,50,20,255});
+        DrawRectangle(208,128,2,122,(Color){100,50,20,255});
+        DrawRectangle(180,80,10,52,(Color){80,40,20,255});
+        DrawRectangle(176,76,18,8,(Color){60,35,15,255});
+        /* Costuras do saco */
+        DrawLine(185,130,185,248,(Color){120,60,25,255});
+        DrawLine(160,190,210,190,(Color){120,60,25,255});
+
+        /* Trof--us na prateleira */
+        DrawRectangle(400,50,220,10,(Color){100,65,30,255});
+        DrawRectangle(400,48,220,4,(Color){120,80,35,255});
+        /* Trofeu 1 */
+        DrawRectangle(420,20,20,30,(Color){220,180,20,255});
+        DrawRectangle(415,48,30,6,(Color){180,140,15,255});
+        DrawRectangle(425,15,10,8,(Color){220,180,20,255});
+        DrawCircle(430,14,7,(Color){220,180,20,255});
+        DrawCircle(430,14,4,(Color){255,220,50,255});
+        /* Trofeu 2 (maior) */
+        DrawRectangle(480,10,24,38,(Color){220,180,20,255});
+        DrawRectangle(474,46,36,8,(Color){180,140,15,255});
+        DrawRectangle(486,4,12,10,(Color){220,180,20,255});
+        DrawCircle(492,3,9,(Color){220,180,20,255});
+        DrawCircle(492,3,5,(Color){255,220,50,255});
+        /* Trofeu 3 */
+        DrawRectangle(540,22,18,26,(Color){180,180,180,255});
+        DrawRectangle(536,46,26,6,(Color){140,140,140,255});
+        DrawRectangle(544,18,10,6,(Color){180,180,180,255});
+        DrawCircle(549,17,6,(Color){180,180,180,255});
+        /* Fotos na parede */
+        DrawRectangle(660,40,80,60,(Color){240,230,200,255});
+        DrawRectangle(660,40,80,2,BLACK); DrawRectangle(660,40,2,60,BLACK);
+        DrawRectangle(738,40,2,60,BLACK); DrawRectangle(660,98,80,2,BLACK);
+        DrawRectangle(666,46,68,48,(Color){100,80,60,200});
+        DrawRectangle(750,30,80,80,(Color){240,230,200,255});
+        DrawRectangle(750,30,80,2,BLACK); DrawRectangle(750,30,2,80,BLACK);
+        DrawRectangle(828,30,2,80,BLACK); DrawRectangle(750,108,80,2,BLACK);
+        DrawRectangle(756,36,68,68,(Color){60,80,100,200});
+
+        /* Luz no teto */
+        DrawCircle(512,50,20,(Color){255,255,200,255});
+        DrawRectangle(502,0,20,52,(Color){200,180,60,255});
+        DrawCircle(512,380,200,(Color){255,255,220,15});
+
+        /* ---- HUD TOPO ---- */
+        DrawRectangle(0,0,1024,36,(Color){0,0,0,180});
+        char buf2[128];
+        sprintf(buf2,"Nivel %d  |  Fase %d/%d  |  Vida: %d/%d",
+                j->jogador.nivel, j->jogador.fase_atual+1, MAX_ADVERSARIOS,
+                j->jogador.atrib.vida, j->jogador.atrib.vida_max);
+        DrawText(buf2, 512-MeasureText(buf2,13)/2, 10, 13, WHITE);
+        if (j->timer_save_feedback > 0.0f)
+            DrawText("[S] Salvo!", 920, 10, 12, GREEN);
+        else
+            DrawText("[S] Salvar  [ESC] Menu", 820, 10, 11, DARKGRAY);
+
+        /* Pontos dispon--veis */
         if (j->jogador.pontos_atributo > 0) {
-            DrawRectangle(16, 136, 380, 20, (Color){80, 60, 0, 200});
-            DrawText("[ ! ] Pontos disponiveis - va em Estatisticas (opcao 5)",
-                     20, 139, 12, YELLOW);
+            DrawRectangle(0,34,1024,20,(Color){80,60,0,220});
+            sprintf(buf2,"! %d ponto(s) de atributo disponivel! Entre em Estatisticas para distribuir.",
+                    j->jogador.pontos_atributo);
+            DrawText(buf2, 512-MeasureText(buf2,12)/2, 38, 12, GOLD);
         }
 
-        if (j->timer_save_feedback > 0.0f) {
-            DrawText("Salvo!", SCREEN_W - 70, 80, 14, GREEN);
+        /* ---- PORTAS ---- */
+        /* 3 portas: Treinar(0) Lutar(1) Stats(2) */
+        const char *porta_nomes[3] = {"TREINAR","LUTAR","ESTATISTICAS"};
+        const char *porta_subs[3]  = {"Velocidade/Potencia/Resistencia",
+                                       "Proximo adversario","Atributos e progresso"};
+        Color porta_cores[3] = {
+            (Color){40,100,180,255},
+            (Color){180,40,40,255},
+            (Color){40,140,60,255}
+        };
+
+        int sub = j->academia_sub;
+
+        /* Desenha fundo escurecido se em submenu */
+        if (sub > 0) {
+            DrawRectangle(0,36,1024,564,(Color){0,0,0,160});
         }
 
-        DrawLine(0, 158, SCREEN_W, 158, (Color){40, 55, 90, 255});
+        for (int i=0;i<3;i++) {
+            int px3 = 160 + i*260;
+            int py3 = 160;
+            int pw  = 200, ph = 200;
+            int sel = (j->academia_opcao == i);
 
-        /* Painel esquerdo: menu */
-        const char *opcoes[] = {
-            "Treinar Velocidade",
-            "Treinar Potencia",
-            "Treinar Resistencia",
-            ">> LUTAR <<",
-            "Estatisticas",
-            "Salvar Jogo",
-            "Voltar ao Menu"
-        };
-        const char *desc[] = {
-            "+Velocidade  |  Tempo de reacao",
-            "+Potencia    |  Barra de forca",
-            "+Resistencia |  Sequencia de teclas",
-            "Enfrentar adversario da fase atual",
-            "Atributos, golpes e level-up",
-            "Gravar progresso em arquivo",
-            "Retornar ao menu principal"
-        };
-        /* Icones de texto para cada opcao */
-        const char *icons[] = {"[V]","[P]","[R]","[!]","[=]","[S]","[<]"};
-        Color icon_cols[] = {SKYBLUE, ORANGE, GREEN, RED, LIGHTGRAY, GOLD, GRAY};
+            /* Zoom na porta selecionada quando nao esta em submenu */
+            if (sel && sub == 0) {
+                px3 -= 12; py3 -= 12; pw += 24; ph += 24;
+            }
 
-        for (int i = 0; i < 7; i++) {
-            int y = 164 + i * 40;
-            int sel = (i == j->academia_opcao);
-            /* Fundo do item */
-            if (sel) {
-                DrawRectangle(0, y, 620, 38, (Color){30, 50, 110, 255});
-                DrawRectangle(0, y, 4, 38, GOLD);
+            /* Sombra da porta */
+            DrawRectangle(px3+6,py3+6,pw,ph,(Color){0,0,0,120});
+
+            /* Moldura */
+            DrawRectangle(px3-6,py3-6,pw+12,ph+12,(Color){80,50,20,255});
+
+            /* Porta em si */
+            Color cp = porta_cores[i];
+            if (!sel || sub > 0) cp = (Color){(unsigned char)(cp.r*6/10),(unsigned char)(cp.g*6/10),(unsigned char)(cp.b*6/10),255};
+            DrawRectangle(px3,py3,pw,ph,cp);
+
+            /* Detalhes da porta */
+            DrawRectangle(px3+10,py3+10,pw-20,ph/2-10,(Color){0,0,0,40});
+            DrawRectangle(px3+10,py3+ph/2+5,pw-20,ph/2-20,(Color){0,0,0,40});
+            DrawRectangle(px3+pw-20,py3+ph/2-6,10,12,(Color){200,160,30,255});
+
+            /* Contorno brilhante se selecionada */
+            if (sel && sub == 0) {
+                DrawRectangleLines(px3,py3,pw,ph,(Color){255,220,50,255});
+                DrawRectangleLines(px3+2,py3+2,pw-4,ph-4,(Color){255,220,50,120});
             } else {
-                DrawRectangle(0, y, 620, 38, (Color){15, 22, 44, 200});
-                DrawRectangle(0, y, 2, 38, (Color){40,55,90,255});
+                DrawRectangleLines(px3,py3,pw,ph,(Color){60,40,15,255});
             }
-            /* Icone */
-            DrawText(icons[i], 10, y + 11, 14, icon_cols[i]);
-            /* Texto principal */
-            Color ct = sel ? GOLD : (i == 3 ? (Color){255,150,100,255} : WHITE);
-            DrawText(opcoes[i], 46, y + 11, 15, ct);
-            /* Descricao */
-            DrawText(desc[i], 310, y + 13, 12,
-                     sel ? (Color){200,200,200,255} : (Color){70,85,110,255});
+
+            /* Nome da porta */
+            int tw = MeasureText(porta_nomes[i], sel&&sub==0?18:15);
+            int ts = sel&&sub==0?18:15;
+            DrawText(porta_nomes[i], px3+pw/2-tw/2, py3+ph+12, ts,
+                     sel&&sub==0?GOLD:LIGHTGRAY);
+            int tw2 = MeasureText(porta_subs[i], 11);
+            DrawText(porta_subs[i], px3+pw/2-tw2/2, py3+ph+34, 11,
+                     sel&&sub==0?(Color){200,200,100,255}:DARKGRAY);
         }
 
-        /* Painel direito: info do proximo adversario */
-        DrawRectangle(630, 158, 394, 280, (Color){12, 18, 38, 230});
-        DrawRectangleLines(630, 158, 394, 280, (Color){40,55,90,255});
-        DrawText("PROXIMO ADVERSARIO", 640, 165, 13, GOLD);
-        DrawLine(630, 182, 1024, 182, (Color){40,55,90,255});
+        /* Setas de navegacao */
+        if (sub == 0) {
+            DrawText("<  ESQUERDA / DIREITA  >",
+                     512-MeasureText("<  ESQUERDA / DIREITA  >",14)/2,
+                     400, 14, (Color){120,120,120,200});
+            DrawText("ENTER para entrar",
+                     512-MeasureText("ENTER para entrar",13)/2,
+                     420, 13, (Color){100,100,80,200});
+        }
 
-        if (j->jogador.fase_atual < MAX_ADVERSARIOS) {
+        /* ---- SUBMENU TREINO ---- */
+        if (sub == 1) {
+            DrawRectangle(262,150,500,300,(Color){15,20,40,240});
+            DrawRectangleLines(262,150,500,300,GOLD);
+            DrawText("ESCOLHA O TREINO",
+                     512-MeasureText("ESCOLHA O TREINO",20)/2, 168, 20, GOLD);
+            DrawLine(272,196,752,196,(Color){60,60,30,255});
+
+            const char *tnomes[3] = {"VELOCIDADE","POTENCIA","RESISTENCIA"};
+            const char *tdesc[3]  = {"Tempo de reacao - ganhe +Velocidade",
+                                      "Barra de forca - ganhe +Potencia",
+                                      "Sequencia de teclas - ganhe +Resistencia"};
+            for (int i=0;i<3;i++) {
+                int ty = 210+i*70;
+                int tsel = (j->treino_opcao==i);
+                Color tc = tsel?(Color){30,50,110,255}:(Color){20,30,60,200};
+                DrawRectangle(282,ty,460,58,tc);
+                DrawRectangleLines(282,ty,460,58,tsel?GOLD:(Color){40,50,80,255});
+                if (tsel) DrawRectangle(282,ty,4,58,GOLD);
+                DrawText(tnomes[i],300,ty+8,16,tsel?GOLD:WHITE);
+                DrawText(tdesc[i],300,ty+30,12,tsel?(Color){200,200,150,255}:DARKGRAY);
+            }
+            DrawText("ESC = Voltar  |  ENTER = Confirmar",
+                     512-MeasureText("ESC = Voltar  |  ENTER = Confirmar",13)/2,
+                     428,13,DARKGRAY);
+        }
+
+        /* ---- CARD DO ADVERSARIO ---- */
+        if (sub == 2 && j->jogador.fase_atual < MAX_ADVERSARIOS) {
             Adversario *prox = &j->adversarios[j->jogador.fase_atual];
-            /* Boneco do adversario em miniatura */
-            int cx = 780, cy = 290;
-            DrawCircle(cx, cy - 50, 22, prox->cor);
-            DrawRectangle(cx - 18, cy - 28, 36, 40, prox->cor);
-            DrawCircle(cx - 22, cy - 16, 12, (Color){180,50,50,255});
-            DrawCircle(cx + 22, cy - 16, 12, (Color){180,50,50,255});
+            DrawRectangle(262,100,500,400,(Color){15,10,25,245});
+            DrawRectangleLines(262,100,500,400,(Color){180,40,40,255});
+            DrawRectangleLines(264,102,496,396,(Color){100,20,20,150});
 
-            int nw2 = MeasureText(prox->nome, 16);
-            DrawText(prox->nome, cx - nw2/2, cy + 18, 16, WHITE);
-            int sw = MeasureText(prox->estilo, 12);
-            DrawText(prox->estilo, cx - sw/2, cy + 38, 12, LIGHTGRAY);
+            DrawText("PROXIMO ADVERSARIO",
+                     512-MeasureText("PROXIMO ADVERSARIO",16)/2,114,16,(Color){200,100,100,255});
+            DrawLine(272,136,752,136,(Color){100,30,30,255});
 
-            /* Atributos do adversario como barras */
-            const char *atr_names[] = {"POT","VEL","TEC","RES"};
-            int atr_vals[] = {prox->atrib.potencia, prox->atrib.velocidade,
-                              prox->atrib.tecnica,  prox->atrib.resistencia};
-            for (int i = 0; i < 4; i++) {
-                int ax = 640, ay = 330 + i * 22;
-                DrawText(atr_names[i], ax, ay, 11, LIGHTGRAY);
-                DrawRectangle(ax + 35, ay, 100, 12, DARKGRAY);
-                int bw = (int)(100.0f * (float)atr_vals[i] / 20.0f);
-                if (bw > 100) bw = 100;
-                Color bc2 = (atr_vals[i] > 12) ? RED :
-                            (atr_vals[i] > 8)  ? ORANGE : GREEN;
-                DrawRectangle(ax + 35, ay, bw, 12, bc2);
-                DrawRectangleLines(ax + 35, ay, 100, 12, GRAY);
-                sprintf(buf, "%d", atr_vals[i]);
-                DrawText(buf, ax + 140, ay, 11, WHITE);
+            DrawText(prox->nome,
+                     512-MeasureText(prox->nome,28)/2,148,28,WHITE);
+            DrawText(prox->estilo,
+                     512-MeasureText(prox->estilo,16)/2,184,16,prox->cor);
+
+            /* Atributos do adversario */
+            DrawLine(272,210,752,210,(Color){60,40,40,255});
+            DrawText("ATRIBUTOS:",290,220,13,(Color){180,140,140,255});
+            char buf3[64];
+            const char *anomes[5]={"Tecnica","Velocidade","Resistencia","Potencia","Vida"};
+            int avals[5]={prox->atrib.tecnica,prox->atrib.velocidade,
+                          prox->atrib.resistencia,prox->atrib.potencia,prox->atrib.vida_max};
+            for (int i=0;i<5;i++) {
+                int ax=290+i*92, ay=240;
+                DrawText(anomes[i],ax,ay,10,(Color){160,130,130,255});
+                DrawRectangle(ax,ay+14,80,8,DARKGRAY);
+                int bw=(int)(80.0f*(float)avals[i]/20.0f);
+                if(bw>80)bw=80;
+                Color bc2=(i==3)?(Color){200,80,80,255}:
+                          (i==1)?(Color){80,180,200,255}:
+                          (i==2)?(Color){80,200,80,255}:(Color){180,180,80,255};
+                DrawRectangle(ax,ay+14,bw,8,bc2);
+                DrawRectangleLines(ax,ay+14,80,8,(Color){60,50,50,255});
+                sprintf(buf3,"%d",avals[i]);
+                DrawText(buf3,ax+82,ay+13,10,WHITE);
             }
-        } else {
-            DrawText("Todos os adversarios", 660, 220, 14, GOLD);
-            DrawText("foram derrotados!", 660, 245, 14, GOLD);
-            DrawText("Veja Estatisticas", 660, 280, 13, LIGHTGRAY);
-        }
 
-        /* Rodape */
-        DrawRectangle(0, SCREEN_H - 28, SCREEN_W, 28, (Color){0,0,0,160});
-        DrawText("[CIMA/BAIXO] Navegar   [ENTER] Selecionar",
-                 SCREEN_W/2 - MeasureText("[CIMA/BAIXO] Navegar   [ENTER] Selecionar", 12)/2,
-                 SCREEN_H - 20, 12, (Color){80,90,110,255});
+            /* Dica da luta */
+            DrawLine(272,280,752,280,(Color){60,40,40,255});
+            DrawText("ESTRATEGIA:",290,292,13,(Color){180,140,140,255});
+            DrawText(prox->dica_pre_luta,290,312,13,LIGHTGRAY);
+
+            /* Nivel */
+            sprintf(buf3,"Nivel %d",prox->nivel);
+            DrawText(buf3,290,430,14,(Color){200,160,160,255});
+
+            DrawRectangle(362,454,280,34,(Color){150,30,30,220});
+            DrawRectangleLines(362,454,280,34,(Color){220,60,60,255});
+            DrawText("ENTER = LUTAR!",
+                     512-MeasureText("ENTER = LUTAR!",16)/2,462,16,WHITE);
+            DrawText("ESC = Voltar",
+                     512-MeasureText("ESC = Voltar",12)/2,494,12,DARKGRAY);
+        }
         break;
     }
-
     /* ==================== TREINOS ==================== */
     case STATE_TREINO_VELOCIDADE:
     case STATE_TREINO_POTENCIA:

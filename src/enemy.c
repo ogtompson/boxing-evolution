@@ -19,6 +19,9 @@ void EnemyInitTodos(Adversario adversarios[MAX_ADVERSARIOS]) {
     adversarios[0].atrib.potencia    = 5;
     adversarios[0].nivel             = 1;
     adversarios[0].cor               = SKYBLUE;
+    adversarios[0].pele_cor          = (Color){220, 180, 130, 255};
+    adversarios[0].luva_cor          = (Color){ 50, 100, 200, 255};
+    adversarios[0].cabelo_cor        = (Color){ 30,  20,  10, 255};
     adversarios[0].avanca            = 1;
     adversarios[0].cooldown_golpe    = 2.0f;
     adversarios[0].timer_golpe       = 2.0f;
@@ -39,6 +42,9 @@ void EnemyInitTodos(Adversario adversarios[MAX_ADVERSARIOS]) {
     adversarios[1].atrib.potencia    = 14;
     adversarios[1].nivel             = 3;
     adversarios[1].cor               = ORANGE;
+    adversarios[1].pele_cor          = (Color){ 90,  55,  25, 255};
+    adversarios[1].luva_cor          = (Color){220, 100,  10, 255};
+    adversarios[1].cabelo_cor        = (Color){ 10,  10,  10, 255};
     adversarios[1].avanca            = 1;
     adversarios[1].cooldown_golpe    = 1.1f;
     adversarios[1].timer_golpe       = 1.1f;
@@ -59,6 +65,9 @@ void EnemyInitTodos(Adversario adversarios[MAX_ADVERSARIOS]) {
     adversarios[2].atrib.potencia    = 9;
     adversarios[2].nivel             = 5;
     adversarios[2].cor               = GREEN;
+    adversarios[2].pele_cor          = (Color){160, 110,  70, 255};
+    adversarios[2].luva_cor          = (Color){ 20, 140,  40, 255};
+    adversarios[2].cabelo_cor        = (Color){ 60,  40,  10, 255};
     adversarios[2].avanca            = 0;
     adversarios[2].cooldown_golpe    = 1.6f;
     adversarios[2].timer_golpe       = 1.6f;
@@ -79,6 +88,9 @@ void EnemyInitTodos(Adversario adversarios[MAX_ADVERSARIOS]) {
     adversarios[3].atrib.potencia    = 12;
     adversarios[3].nivel             = 8;
     adversarios[3].cor               = PURPLE;
+    adversarios[3].pele_cor          = (Color){200, 160, 110, 255};
+    adversarios[3].luva_cor          = (Color){140,  30, 180, 255};
+    adversarios[3].cabelo_cor        = (Color){ 20,  10,  50, 255};
     adversarios[3].avanca            = 1;
     adversarios[3].cooldown_golpe    = 0.9f;
     adversarios[3].timer_golpe       = 0.9f;
@@ -99,6 +111,9 @@ void EnemyInitTodos(Adversario adversarios[MAX_ADVERSARIOS]) {
     adversarios[4].atrib.potencia    = 16;
     adversarios[4].nivel             = 12;
     adversarios[4].cor               = GOLD;
+    adversarios[4].pele_cor          = (Color){ 70,  40,  15, 255};
+    adversarios[4].luva_cor          = (Color){200, 160,  10, 255};
+    adversarios[4].cabelo_cor        = (Color){ 15,  10,   5, 255};
     adversarios[4].avanca            = 1;
     adversarios[4].cooldown_golpe    = 0.7f;
     adversarios[4].timer_golpe       = 0.7f;
@@ -121,20 +136,20 @@ void EnemyUpdateIA(Jogo *j) {
 
     /* Movimento: avancador persegue, defensivo recua */
     if (adv->avanca) {
-        if (distancia > 90.0f) {
+        if (distancia > 85.0f) {
             luta->adversario_x -= adv->vel_movimento * j->delta;
-            if (luta->adversario_x < luta->jogador_x + 90.0f)
-                luta->adversario_x = luta->jogador_x + 90.0f;
-        } else if (distancia < 65.0f) {
-            luta->adversario_x += 70.0f * j->delta;
+            if (luta->adversario_x < luta->jogador_x + 80.0f)
+                luta->adversario_x = luta->jogador_x + 80.0f;
+        } else if (distancia < 60.0f) {
+            luta->adversario_x += 80.0f * j->delta;
         }
     } else {
         /* Defensivo: recua mas ataca quando o jogador chega perto */
-        if (distancia < 140.0f) {
+        if (distancia < 100.0f) {
             luta->adversario_x += adv->vel_movimento * j->delta;
         }
-        if (luta->adversario_x > 780.0f)
-            luta->adversario_x = 780.0f;
+        if (luta->adversario_x > 814.0f)
+            luta->adversario_x = 814.0f;
     }
 
     /* Ataque */
@@ -142,7 +157,7 @@ void EnemyUpdateIA(Jogo *j) {
     if (adv->timer_golpe <= 0.0f) {
         adv->timer_golpe = adv->cooldown_golpe;
 
-        if (distancia < 130.0f) {
+        if (distancia < 90.0f) {
             luta->adversario_atacando = 1;
             int dano = EnemyCalcularDano(adv);
             if (luta->jogador_defendendo)
@@ -160,43 +175,8 @@ void EnemyUpdateIA(Jogo *j) {
 }
 
 void EnemyDraw(Adversario *adv, float x, float y, int atacando) {
-    int ix = (int)x;
-    int iy = (int)y;
-    Color cor       = adv->cor;
-    Color cor_pele  = (Color){220,180,130,255};
-    Color cor_short = (Color){(unsigned char)(cor.r/2),
-                               (unsigned char)(cor.g/2),
-                               (unsigned char)(cor.b/2),255};
-
-    DrawRectangle(ix-14, iy-30, 12, 30, cor_short);
-    DrawRectangle(ix+2,  iy-30, 12, 30, cor_short);
-    DrawRectangle(ix-16, iy-2,  14,  6, DARKGRAY);
-    DrawRectangle(ix+2,  iy-2,  14,  6, DARKGRAY);
-    DrawRectangle(ix-18, iy-68, 36, 40, cor);
-    DrawCircle(ix, iy-82, 16, cor_pele);
-    DrawCircle(ix, iy-82, 17, (Color){cor.r,cor.g,cor.b,100});
-    DrawRectangle(ix-17,iy-92,34,10,cor);
-
-    if (atacando) {
-        /* Soco esticado para a esquerda (em direcao ao jogador) */
-        DrawCircle(ix-40, iy-62, 13, RED);
-        DrawCircle(ix+16, iy-60, 11, RED);
-        DrawCircle(ix-28, iy-62,  6, (Color){255,100,100,120});
-    } else {
-        DrawCircle(ix-20, iy-72, 12, RED);
-        DrawCircle(ix+20, iy-72, 12, RED);
-    }
-
-    /* Barra de vida */
-    int vmax = adv->atrib.vida_max > 0 ? adv->atrib.vida_max : 1;
-    int vida = adv->atrib.vida < 0 ? 0 : adv->atrib.vida;
-    int bv   = (int)(100.0f*(float)vida/(float)vmax);
-    DrawRectangle(ix-50,iy-108,100,8,DARKGRAY);
-    Color cv = (vida>vmax*2/3)?GREEN:(vida>vmax/3)?YELLOW:RED;
-    DrawRectangle(ix-50,iy-108,bv,8,cv);
-    DrawRectangleLines(ix-50,iy-108,100,8,WHITE);
-    int nw = MeasureText(adv->nome,11);
-    DrawText(adv->nome,ix-nw/2,iy-122,11,WHITE);
+    (void)adv;(void)x;(void)y;(void)atacando;
+    /* Sprites desenhados em fight.c via DrawSpriteAdversario */
 }
 
 int EnemyCalcularDano(Adversario *adv) {

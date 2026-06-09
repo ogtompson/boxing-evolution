@@ -24,6 +24,8 @@ typedef enum {
     STATE_LUTA,
     STATE_ESTATISTICAS,
     STATE_CONHECIMENTO,
+    STATE_ACADEMIA_LUTAR,    /* card do proximo adversario */
+    STATE_ACADEMIA_TREINAR,  /* submenu de treino          */
     STATE_GAMEOVER,
     STATE_VITORIA,
     STATE_CREDITOS,
@@ -83,6 +85,9 @@ typedef struct {
     Atributos atrib;
     int       nivel;
     Color     cor;
+    Color     pele_cor;
+    Color     luva_cor;
+    Color     cabelo_cor;
     /* comportamento de IA */
     int       avanca;           /* 1=persegue jogador, 0=recua */
     float     cooldown_golpe;   /* intervalo entre ataques      */
@@ -111,8 +116,12 @@ typedef struct {
     EstadoLuta           luta;
     int                  adversario_atual_idx;
 
-    /* Navegacao do menu da academia */
+    /* Navegacao do menu da academia (0=Treinar 1=Lutar 2=Stats) */
     int                  academia_opcao;
+    /* Submenu de treino (0=Vel 1=Pot 2=Res) */
+    int                  treino_opcao;
+    /* 0=academia normal, 1=submenu treino, 2=card adversario */
+    int                  academia_sub;
 
     /* Navegacao do menu principal */
     int                  menu_opcao;
